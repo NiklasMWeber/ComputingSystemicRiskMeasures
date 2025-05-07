@@ -1,1 +1,1 @@
-# Computing-Systemic-Risk-Measures
+# ComputingSystemicRiskMeasures
