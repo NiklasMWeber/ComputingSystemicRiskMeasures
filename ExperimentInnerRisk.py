@@ -5,7 +5,7 @@ import copy
 import math
 import time
 from multiprocessing import Pool
-# test
+
 import dgl
 import numpy as np
 import torch
