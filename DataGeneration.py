@@ -130,44 +130,6 @@ def get_cp_graphs(num_graphs):
     return list_of_graphs, useful_tensor
 
 
-# def get_cp_graphs_slow(num_graphs):
-#     num_nodes = 100
-#     list_of_graphs = []
-#     list_of_assets = []
-#     list_of_liab = []
-#     list_of_outgoing_liab = []
-#     for i in range(num_graphs):
-#         liab = create_cp_liab_matrix(n=100)
-#         factor = torch.cat((torch.full((10,), 50), torch.full((90,), 10)))
-#         assets = factor * torch.Tensor(get_gaussian_copula_beta_assets(num_nodes=num_nodes, correlation=0.5))
-#
-#         adj = (liab > 0).astype(int)
-#         src, dst = np.nonzero(adj)
-#         g = dgl.graph((src, dst), num_nodes=100)
-#         g.edata['weight'] = torch.FloatTensor(liab[src,dst])
-#         g.ndata['assets'] = assets  # add in- and out-liab later after permutation
-#
-#         g_perm = permute_graph(g)
-#
-#         liab_tensor = get_liability_matrix(g_perm)
-#         outgoing_liabilities = liab_tensor.sum(dim=1)
-#         incoming_liabilities = liab_tensor.sum(dim=0)
-#         assets = g_perm.ndata['assets']
-#
-#         # complete graph ndata
-#         g_perm.ndata['outgoingLiabilities'] = outgoing_liabilities
-#         g_perm.ndata['incomingLiabilities'] = incoming_liabilities
-#
-#         list_of_graphs.append(g_perm)
-#         list_of_liab.append(liab_tensor)  # all liabilities are of size 1, hence can use adj directly
-#         list_of_assets.append(assets.unsqueeze(-1))
-#         list_of_outgoing_liab.append(outgoing_liabilities.unsqueeze(-1))
-#
-#         useful_tensor = (torch.stack(list_of_liab, dim=0), torch.stack(list_of_assets, dim=0),
-#                          torch.stack(list_of_outgoing_liab, dim=0))
-#
-#     return list_of_graphs, useful_tensor
-
 
 ### Core Periphery fixed
 def get_cpf_graphs(num_graphs, liab):

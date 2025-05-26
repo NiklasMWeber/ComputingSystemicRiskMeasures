@@ -22,7 +22,7 @@ from DataGeneration import DataGenerator, get_graphs_from_list
 # old functionalities/methods are mostly removed
 
 # get package-, output-path and timestamp
-path_to_package = os.path.abspath(os.getcwd()).split('GNN')[0] + 'GNN/LearnRiskMeasure/'
+path_to_package = os.path.abspath(os.getcwd()).split('ComputingSystemicRiskMeasures')[0] + 'ComputingSystemicRiskMeasures/'
 dt_string = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 out_path = path_to_package + 'Experiments/' + dt_string + '/'
 #pff

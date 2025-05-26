@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-path_to_package = os.path.abspath(os.getcwd()).split('GNN')[0] + 'GNN/LearnRiskMeasure/'
+path_to_package = os.path.abspath(os.getcwd()).split('ComputingSystemicRiskMeasures')[0] + 'ComputingSystemicRiskMeasures/'
 dt_string = '2025_04_17_22_37_59_Outer_Bench_AVAR'
 out_path = path_to_package + 'Experiments/' + dt_string + '/'
 filename = out_path + 'exp_log.txt'
