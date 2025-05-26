@@ -2,6 +2,7 @@ import dgl
 import scipy.stats
 import numpy as np
 import torch
+import os
 
 
 class DataGenerator:
@@ -251,57 +252,24 @@ def permute_graph(g):
 
 
 if __name__== "__main__":
-    import time
+    ### create validation and test set for experiments
 
-    ### Checking stuff for CP and permutation
-    # check if permute_graph also permuted edges
-    # g = dgl.graph(([0, 0,0, 1, 1,1, 2,2,2], [0, 1,2, 0, 1,2,0,1,2]))
-    # g.ndata['a'] = torch.Tensor([[1], [2], [3]])
-    # g.edata['weight'] = torch.Tensor([[11], [12], [13], [21], [22], [23], [31], [32], [33]])
-    # a = g.ndata['a']
-    # weight = g.edata['weight']
-    # g_perm = permute_graph(g)
-    # a_perm = g_perm.ndata['a']
-    # weight_perm = g.edata['weight']
-    # a_x = g.ndata['a']
-    # weight_x = g.edata['weight']
-    # l = get_cp_graphs(1)
+    # get path
+    path_to_package = os.path.abspath(os.getcwd()).split('ComputingSystemicRiskMeasures')[0] + 'ComputingSystemicRiskMeasures/'
 
-    ### Checking permutation indexing
-    # L = np.array([[11, 12, 13], [21, 22, 23], [31, 32, 33]])
-    # A = np.array([[1], [2], [3]])
-    # idx = np.arange(3)
-    # idx_perm = np.arange(3)
-    # np.random.shuffle(idx_perm)
-    # A_perm = A.copy()
-    # L_perm = L.copy()
-    # A_perm[idx_perm] = A[idx]
-    # L_perm[idx_perm,:] = L_perm[idx,:]
-    # L_perm[:, idx_perm] = L_perm[:, idx]
+    # ER data
+    list_of_er_graphs, _ = get_er_graphs(5)
+    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_erdos_renyi_10_04X.bin", list_of_er_graphs)
 
-    ### Checking duration to create ER graphs
-    # num_graphs = 10
-    # num_nodes = 9
-    # np.random.seed(1899)
-    # start = time.time()
-    # list_of_graphs, useful_tensor = get_er_graphs(num_graphs=num_graphs, num_nodes=num_nodes)
-    # end = time.time()
-    # print(f'Elapsed time: {end-start} seconds for {num_graphs} graphs with {num_nodes} nodes each')
+    # CP data
+    list_of_cp_graphs, _ = get_cp_graphs(5)
+    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_50_10_shuffledX.bin'", list_of_cp_graphs)
 
-    ### Check more timing
-    # num_graphs = 100
-    # start = time.time()
-    # _, _ = get_er_graphs(num_graphs=num_graphs)
-    # end = time.time()
-    # print(f'Elapsed time: {end-start} seconds for {num_graphs} graphs of type ER.')
-    #
-    # # start = time.time()
-    # # _, _ = get_cp_graphs_slow(num_graphs=num_graphs)
-    # # end = time.time()
-    # # print(f'Elapsed time: {end - start} seconds for {num_graphs} graphs of type CP slow.')
-    #
-    # start = time.time()
-    # _, _ = get_cp_graphs(num_graphs=num_graphs)
-    # end = time.time()
-    # print(f'Elapsed time: {end - start} seconds for {num_graphs} graphs of type CP fast.')
+    # CPf data
+    data_generator = DataGenerator('CPf',
+                                   path_to_package + 'Data/5000_beta_assetFactor_50_10_fixed_idx0_unshuffled[0].bin')
+    list_of_cpf_graphs, _ = data_generator.get_graphs(5)
+    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_50_10_fixed_idx0_unshuffledX.bin", list_of_cpf_graphs)
+
+
     print('Done')
