@@ -1,7 +1,6 @@
-import math
 import time
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import dgl
 import numpy as np
@@ -13,7 +12,7 @@ from dgl.nn.pytorch.conv import SAGEConv
 # 2* N graphs with i=0,...,N-1 for cascade and star network + Train and Test set
 
 # get package-, output-path and timestamp
-path_to_package = os.path.abspath(os.getcwd()).split('ComputingSystemicRiskMeasures')[0] + 'ComputingSystemicRiskMeasures/'
+path_to_package = os.path.abspath(os.getcwd()).split('GNN')[0] + 'GNN/LearnRiskMeasure/'
 dt_string = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 out_path = path_to_package + 'Experiments/' + dt_string + '_Generalize/'
 
@@ -262,7 +261,7 @@ def train(model,
     performance_test = evaluate(model, torch.Tensor([0.]), list_of_graphs_test)
     my_print(
         "Epoch {:05d} | Train {:10.4f} | Test {:10.4f} | Capital "
-        "{:6.2f} | Time {:6}".format(0, performance_train, performance_test, 0, math.ceil((time.time()-start)/60)))
+        "{:6.2f} | Time {:6}".format(0, performance_train, performance_test, 0,  str(timedelta(seconds=round(time.time()-start)))))
 
     for epoch in range(1, number_of_epochs + 1):
         graph_losses = []
@@ -292,12 +291,12 @@ def train(model,
             my_print(
                 "Epoch {:05d} | Train {:10.4f} | Test {:10.4f} | Capital "
                 "{:6.2f} | Time {:6}".format(epoch, performance_train, performance_test, bailout_capital.item(),
-                                             math.ceil((time.time() - start) / 60)))
+                                             str(timedelta(seconds=round(time.time()-start)))))
 
     my_print(
         "Best Model | Train {:10.4f} | Test {:10.4f} | Capital "
         "{:6.2f} | Time {:6}".format(best_model_performance[0], best_model_performance[1], bailout_capital.item(),
-                                             math.ceil((time.time() - start) / 60)))
+                                          str(timedelta(seconds=round(time.time()-start)))))
     return 'log'
 
 
@@ -337,19 +336,15 @@ if __name__ == '__main__':
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    # run_experiment(10, 'GNN', 9, 100, seed, 0.001)
-    # run_experiment(10, 'XPENN', 9, 100, seed, 0.001)
-    # run_experiment(10, 'NNL', 9, 100, seed, 0.001)
-
-    # run_experiment(10, 'GNN', 9, 1000, seed, 0.001)
-    # run_experiment(10, 'XPENN', 9, 1000, seed, 0.001)
-    # run_experiment(10, 'NNL', 9, 1000, seed, 0.001)
-    # run_experiment(20, 'GNN', 19, 1000, seed, 0.001)
-    # run_experiment(20, 'XPENN', 19, 1000, seed, 0.001)
-    # run_experiment(20, 'NNL', 19, 1000, seed, 0.0005)
-    # run_experiment(50, 'GNN', 49, 1000, seed, 0.001)
-    # run_experiment(50, 'XPENN', 49, 1000, seed, 0.001)
-    # run_experiment(50, 'NNL', 49, 1000, seed, 0.0001)
+    run_experiment(10, 'GNN', 9, 1000, seed, 0.001)
+    run_experiment(10, 'XPENN', 9, 1000, seed, 0.001)
+    run_experiment(10, 'NNL', 9, 1000, seed, 0.001)
+    run_experiment(20, 'GNN', 19, 1000, seed, 0.001)
+    run_experiment(20, 'XPENN', 19, 1000, seed, 0.001)
+    run_experiment(20, 'NNL', 19, 1000, seed, 0.0005)
+    run_experiment(50, 'GNN', 49, 1000, seed, 0.001)
+    run_experiment(50, 'XPENN', 49, 1000, seed, 0.001)
+    run_experiment(50, 'NNL', 49, 1000, seed, 0.0001)
     run_experiment(100, 'GNN', 99, 1000, seed, 0.001)
     run_experiment(100, 'XPENN', 99, 1000, seed, 0.001)
     run_experiment(100, 'NNL', 99, 1000, seed, 0.00001)
