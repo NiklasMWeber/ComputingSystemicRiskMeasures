@@ -15,30 +15,29 @@ import Models
 from EisenbergNoe import get_clearing_vector_iter_from_batch
 from DataGeneration import DataGenerator, get_graphs_from_list
 
-###
-# This is a version of experiment (1)
-# It provides vectorized calculation of the CV and calculates only the rolling train performance
-# It can generate training data on the fly and generate a fixed val and test set or use predefined data
-# old functionalities/methods are mostly removed
+# This file deals with decreasing the systemic risk of a financial network by learning to allocate a fixed amount of
+# bailout capital optimally.
+# Running the main function starts the train runs of all parameter combinations from the "config" dictionary.
+# This is the file for obtaining th results of the Benchmarks that do not need training!
+
 
 # get package-, output-path and timestamp
 path_to_package = os.path.abspath(os.getcwd()).split('ComputingSystemicRiskMeasures')[0] + 'ComputingSystemicRiskMeasures/'
 dt_string = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 out_path = path_to_package + 'Experiments/' + dt_string + '/'
 
+# config dictionary. Specify which dataset, model, and parameter combinations you want to train
 config = {
-    # Hand over path and time stamp for saving trained models, plots, etc...
+    # Hand over path and time stamp for saving trained models and log files
     'path_to_package': [path_to_package],
     'out_path': [out_path],
     'dt_string': [dt_string],
     # Choose datasets to be trained on
-    'dataset': ['ER','CP', 'CPf'], # 'CP', 'CPf',  # , 'CP', 'CPf', 'CP', 'CPf', 'CP', 'CPf'
-    # 'ER'  'CP'  'CPf'
+    'dataset': ['ER','CP', 'CPf'],
 
-    # type,in,h,edge,out,GNN Lay, NN Lay, activation, normalisation to 1
     'nn_specs':  [('Uniform',), ('Default',), ('Level1',)],
 
-    'number_of_epochs': [1],
+    'number_of_epochs': [1],  # doe snot need multiple epochs since no training is required for benchmarks
     'batch_size': [10],  # [1, 10, 100],
     'learning_rate': [1e-3],
     'seed': [1900], # 1900, 1954, 1974, 1990, 2014
