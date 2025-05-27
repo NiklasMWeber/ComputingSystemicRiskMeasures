@@ -100,7 +100,7 @@ class ExperimentPrinter:
 #     return torch.mean(data[:-border_idx])
 
 def risk_func(x):
-    return torch.log(torch.exp(0.01*x).mean())/0.01
+    return torch.log(torch.exp(0.01*x).mean())/0.01  # entropic risk measure
     # return torch.mean(x)  # expectation risk measure
 
 
