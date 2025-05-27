@@ -221,17 +221,17 @@ if __name__== "__main__":
 
     # ER data
     list_of_er_graphs, _ = get_er_graphs(5)
-    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_erdos_renyi_10_04X.bin", list_of_er_graphs)
+    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_erdos_renyi_10_04.bin", list_of_er_graphs)
 
     # CP data
     list_of_cp_graphs, _ = get_cp_graphs(5)
-    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_50_10_shuffledX.bin'", list_of_cp_graphs)
+    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_50_10_shuffled.bin'", list_of_cp_graphs)
 
     # CPf data
     data_generator = DataGenerator('CPf',
                                    path_to_package + 'Data/5000_beta_assetFactor_50_10_fixed_idx0_unshuffled[0].bin')
     list_of_cpf_graphs, _ = data_generator.get_graphs(5)
-    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_50_10_fixed_idx0_unshuffledX.bin", list_of_cpf_graphs)
+    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_50_10_fixed_idx0_unshuffled.bin", list_of_cpf_graphs)
 
 
     print('Done')
