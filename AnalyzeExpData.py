@@ -1,15 +1,14 @@
 import os
 import pandas as pd
 
+# this script creates a csv file for an Experiment. Simply give the folder name of the Experiment as dt_string
+# the csv file contains mean and std across the seeds of the performance of all parameter combinations in the config file
+
 path_to_package = os.path.abspath(os.getcwd()).split('ComputingSystemicRiskMeasures')[0] + 'ComputingSystemicRiskMeasures/'
-dt_string = '2025_04_17_22_37_59_Outer_Bench_AVAR'
+dt_string = '2025_04_17_22_37_59_Outer_Bench'
 out_path = path_to_package + 'Experiments/' + dt_string + '/'
 filename = out_path + 'exp_log.txt'
 
-# 2025_04_17_14_08_51_Inner_AVAR
-# 2025_04_18_02_02_24_Inner_Bench_AVAR
-# 2025_04_17_22_21_36_Outer_AVAR
-# 2025_04_17_22_37_59_Outer_Bench_AVAR
 def read_file_to_list_of_lists(filename):
     with open(filename, 'r') as file:
         list_of_lists = [line.strip().split('\t') for line in file]
