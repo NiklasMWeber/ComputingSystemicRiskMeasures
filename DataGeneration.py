@@ -220,18 +220,20 @@ if __name__== "__main__":
     path_to_package = os.path.abspath(os.getcwd()).split('ComputingSystemicRiskMeasures')[0] + 'ComputingSystemicRiskMeasures/'
 
     # ER data
-    list_of_er_graphs, _ = get_er_graphs(5)
+    print('Generating ER data...')
+    list_of_er_graphs, _ = get_er_graphs(5000)
     dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_erdos_renyi_10_04.bin", list_of_er_graphs)
 
     # CP data
-    list_of_cp_graphs, _ = get_cp_graphs(5)
-    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_50_10_shuffled.bin'", list_of_cp_graphs)
+    print('Generating CP data...')
+    list_of_cp_graphs, _ = get_cp_graphs(5000)
+    dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_50_10_shuffled.bin", list_of_cp_graphs)
 
     # CPf data
+    print('Generating CPf data...')
     data_generator = DataGenerator('CPf',
                                    path_to_package + 'Data/5000_beta_assetFactor_50_10_fixed_idx0_unshuffled[0].bin')
-    list_of_cpf_graphs, _ = data_generator.get_graphs(5)
+    list_of_cpf_graphs, _ = data_generator.get_graphs(5000)
     dgl.save_graphs(path_to_package + "Data/5000_beta_assetFactor_50_10_fixed_idx0_unshuffled.bin", list_of_cpf_graphs)
-
 
     print('Done')
