@@ -16,7 +16,7 @@ from EisenbergNoe import get_clearing_vector_iter_from_batch
 from DataGeneration import DataGenerator, get_graphs_from_list
 
 
-# This file deals with decreasing the systemic risk of a financial network by learning to allocate a fixed amount of
+# This file deals with minimizing the risk of a financial network by learning to allocate a fixed amount of
 # bailout capital optimally.
 # Running the main function starts the train runs of all parameter combinations from the "config" dictionary.
 
@@ -121,8 +121,8 @@ def train(train_data, # train data input not used by default since train data is
           learning_rate: float = 0.01,
           exp_pr: ExperimentPrinter = None):
 
+    # set number_of_grad_steps. Determines how grad steps are performed in each epoch. 1000 points are sampled per epoch for training
     number_of_grad_steps = 1000 // batch_size  # always want to train on same amount of data. bigger batches -> fewer steps
-
 
     # Init bailout and optimizer
     bailout_capital = torch.Tensor([bailout_capital])
@@ -131,7 +131,6 @@ def train(train_data, # train data input not used by default since train data is
     best_model = model
     best_epoch = 0
     last_model = model
-
 
     train_data = data_generator.get_graphs(100)  # initialize train data for 0 bailout information
     # val_data = data_generator.get_graphs(2500)  # can be used to initialize val/test randomly

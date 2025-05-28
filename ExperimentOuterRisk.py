@@ -15,28 +15,25 @@ import Models
 from EisenbergNoe import get_clearing_vector_iter_from_batch
 from DataGeneration import DataGenerator, get_graphs_from_list
 
-###
-# This is a version of experiment (1)
-# It provides vectorized calculation of the CV and calculates only the rolling train performance
-# It can generate training data on the fly and generate a fixed val and test set or use predefined data
-# old functionalities/methods are mostly removed
+# This file deals with finding the systemic risk of a financial network by searching for the smallest amount of capital
+# that secures the system, when the capital is allocated optimally.
+# Running the main function starts the capital search of all parameter combinations from the "config" dictionary.
 
 # get package-, output-path and timestamp
-
 path_to_package = os.path.abspath(os.getcwd()).split('ComputingSystemicRiskMeasures')[0] + 'ComputingSystemicRiskMeasures/'
 dt_string = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 out_path = path_to_package + 'Experiments/' + dt_string + '/'
 
+# config dictionary. Specify which dataset, model, and parameter combinations you want to train
 config = {
-    # Hand over path and time stamp for saving trained models, plots, etc...
+     # Hand over path and time stamp for saving trained models and log files
     'path_to_package': [path_to_package],
     'out_path': [out_path],
     'dt_string': [dt_string],
     # Choose datasets to be trained on
-    'dataset': ['ER', 'CP', 'CPf'], # 'CP', 'CPf',  # , 'CP', 'CPf', 'CP', 'CPf'
-    # 'ER'  'CP'  'CPf'
+    'dataset': ['ER', 'CP', 'CPf'],
 
-    # type,in,h,edge,out,GNN Lay, NN Lay, activation, normalisation to 1
+   # specify NN models to train (see Models.py for details on constructor)
     'nn_specs': [
         ('PENN', 3, 1, [[10, 10], [10], [10], [20, 20, 1]], False, False),
         ('PENN', 3, 1, [[10, 10], [10], [10], [20, 20, 1]], True, False),
@@ -49,26 +46,19 @@ config = {
         ('LinMod', 3, True)
     ],
 
-    # [('constant', 100)]
-    # [('GNN', 3, 7, 10, 1, 7, 3)]
-    # [('LinMod', 3, True)]
-    # [('NN', [3 * 100, 3 * 100, 3 * 100], 100)]
-    # [('NNL', [100*3+100**2, 1000, 1000], 100)]
-    # [('PENN', 3, 1, [[10,4], [9,4], [8, 4], [12, 1]], True, False)]
-    #####
 
     'number_of_epochs': [100],
     'batch_size': [10],  # [1, 10, 100],
     'learning_rate': [1e-3],
-    'seed': [1900
-         , 1954, 1974, 1990, 2014
-             ],
+     'seed': [1900, 1954, 1974, 1990, 2014],
 }
 
+# you can add parameter combination manually by providing
 # path_to_package, out_path, dt_string, data, nn_specs, epochs, batch_size, lr, seed
-manual_exp_configs = None  # [(path_to_package, out_path, dt_string, 'ER', ('GNN', 10, 10, 1, 1, 1), 1, 33, 0.002, 1900)]
+manual_exp_configs = None  # e.g. [(path_to_package, out_path, dt_string, 'ER', ('GNN', 10, 10, 1, 1, 1), 1, 33, 0.002, 1900)]
 
 
+# this method writes arrays to a log file
 def write_arrays_to_file(arrays, filename):
     combined_arrays = []
     for array in arrays:
@@ -77,6 +67,7 @@ def write_arrays_to_file(arrays, filename):
         for array in combined_arrays:
             file.write('\t'.join(array) + '\n')
 
+# this printer class prints and stores messages during training
 class ExperimentPrinter:
 
     def __init__(self, start_time, exp_id, out_path):
@@ -95,7 +86,7 @@ class ExperimentPrinter:
         self.arrays.append(array)
 
 
-
+# helper function to determine next capital level in probabilistic bisection search
 def next_root_idx(func_val, current_idx, current_dist, values):
     p = 0.75
     q = 1-p
@@ -115,10 +106,6 @@ def next_root_idx(func_val, current_idx, current_dist, values):
     next_root = values[next_idx]
     return next_idx, next_root, current_dist
 
-# def AVaR(level: float, data: torch.tensor):
-#     data = torch.sort(data, dim=0, descending=True).values
-#     border_idx = int(len(data) * level)
-#     return torch.mean(data[:-border_idx])
 
 def risk_func(x):
     return torch.log(torch.exp(0.01*x).mean())/0.01
@@ -145,7 +132,7 @@ def evaluate(graph,
     return mean_loss
 
 
-def train(train_data,
+def train(train_data, # train data input not used by default since train data is sampled randomly
           val_data,
           test_data,
           model: nn.Module,
@@ -177,9 +164,9 @@ def train(train_data,
     best_epoch = 0
     last_model = model
 
-    train_data = data_generator.get_graphs(100)
-    # val_data = data_generator.get_graphs(100)  # can be used to initialize val/test randomly
-    # test_data = data_generator.get_graphs(100)
+    train_data = data_generator.get_graphs(100)  # initialize train data for 0 bailout information
+    # val_data = data_generator.get_graphs(2500)  # can be used to initialize val/test randomly
+    # test_data = data_generator.get_graphs(2500) # can be used to initialize val/test randomly
 
     train_performance = evaluate(dgl.batch(train_data[0]), train_data[0], train_data[1][0], train_data[1][1], train_data[1][2],  best_model, torch.Tensor([0.0]))
     val_performance = evaluate(dgl.batch(val_data[0]), val_data[0], val_data[1][0], val_data[1][1], val_data[1][2], best_model, torch.Tensor([0.0]))
@@ -268,6 +255,7 @@ def train(train_data,
 
     return bailout_capital.item(), exp_pr, last_model
 
+# search method does some overhead tasks (load data, initialize model,...) and starts training for each parameter combination
 def search(var: list):
     (path_to_package, out_path, dt_string, dataset, nn_specs, number_of_epochs,batch_size,
      learning_rate, seed, exp_id) = var
@@ -313,13 +301,12 @@ def search(var: list):
 
     exp_pr.print(['Step', 'Loading data'])
     list_of_graphs, dict_of_labels = dgl.load_graphs(data_path)
-    # list_of_graphs = list_of_graphs[:500]
 
     exp_pr.print(['Step', 'Preprocessing'])
 
     train_idx = int(len(list_of_graphs)*train_ratio)
     val_idx = int(len(list_of_graphs)*val_ratio)
-    # train_data = DataGeneration.get_graphs_from_list(list_of_graphs[:train_idx])
+    # train_data = DataGeneration.get_graphs_from_list(list_of_graphs[:train_idx]) # can load fixed train data here if not training on randomly sampled data
     val_data = get_graphs_from_list(list_of_graphs[train_idx:train_idx+val_idx])
     test_data = get_graphs_from_list(list_of_graphs[train_idx+val_idx:])
 
@@ -369,7 +356,6 @@ def search(var: list):
     for comp in nn_specs:
         model_name = model_name + f'{comp}_'
     model_name = model_name + f'{dataset}_{learning_rate}_{batch_size}_{exp_id}'
-    # torch.save(model.state_dict(), out_path + model_name + '.pt')
     torch.save(model.state_dict(), out_path + model_name + '_last.pt')
 
     duration = time.time() - train_start
@@ -378,32 +364,32 @@ def search(var: list):
     return exp_pr.arrays
 
 
-########################################################################################################################
-########################################################################################################################
-
-
 if __name__ == '__main__':
 
     if not os.path.exists(out_path):
         os.makedirs(out_path)
+
     # combinatorics
     keys = list(config)
-    # param_comb = itertools.product(*map(config.get, keys))
     param_comb = [comb for comb in itertools.product(*map(config.get, keys))]
 
     if manual_exp_configs is not None:
         param_comb += manual_exp_configs
 
-    # multiprocessing  ### currently not running on laptop environment... ###
-    param_comb_multi = [[*comb,id] for id, comb in enumerate(param_comb)]
-    pool = Pool(16)
-    exp_arrays = pool.map(search, param_comb_multi)
+    ####################################################################################################################
+    # multiprocessing
+    # param_comb_multi = [[*comb,id] for id, comb in enumerate(param_comb)]
+    # pool = Pool(16)
+    # exp_arrays = pool.map(search, param_comb_multi)
+    ####################################################################################################################
 
-    # debugging loop (can be used isntead of multiprocessing)
-    # exp_arrays = []
-    # for exp_id, comb in enumerate(param_comb):
-    #     exp_array = search([*comb, exp_id])
-    #     exp_arrays.append(exp_array)
+    ####################################################################################################################
+    # debugging loop (can be used instead of multiprocessing)
+    exp_arrays = []
+    for exp_id, comb in enumerate(param_comb):
+        exp_array = search([*comb, exp_id])
+        exp_arrays.append(exp_array)
+    ####################################################################################################################
 
     write_arrays_to_file(exp_arrays, out_path + 'exp_log.txt')
     print('Done')

@@ -15,10 +15,10 @@ import Models
 from EisenbergNoe import get_clearing_vector_iter_from_batch
 from DataGeneration import DataGenerator, get_graphs_from_list
 
-# This file deals with decreasing the systemic risk of a financial network by learning to allocate a fixed amount of
+# This file deals with minimizing the risk of a financial network by learning to allocate a fixed amount of
 # bailout capital optimally.
 # Running the main function starts the train runs of all parameter combinations from the "config" dictionary.
-# This is the file for obtaining th results of the Benchmarks that do not need training!
+# This is the file for obtaining the results of the Benchmarks that do not need training!
 
 
 # get package-, output-path and timestamp
@@ -40,7 +40,7 @@ config = {
     'number_of_epochs': [1],  # does not need multiple epochs since no training is required for benchmarks
     'batch_size': [10],  # [1, 10, 100],
     'learning_rate': [1e-3],
-    'seed': [1900], # 1900, 1954, 1974, 1990, 2014
+    'seed': [1900],  # no seeds needed because benchmarks are deterministic
 }
 
 # you can add parameter combination manually by providing
