@@ -37,17 +37,18 @@ config = {
 
     'nn_specs':  [('Uniform',), ('Default',), ('Level1',)],
 
-    'number_of_epochs': [1],  # doe snot need multiple epochs since no training is required for benchmarks
+    'number_of_epochs': [1],  # does not need multiple epochs since no training is required for benchmarks
     'batch_size': [10],  # [1, 10, 100],
     'learning_rate': [1e-3],
     'seed': [1900], # 1900, 1954, 1974, 1990, 2014
-    # [1e-3, 1e-4, 1e-5],  # 1.0, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001,    , 0.0001, 0.00001, 0.000001, 0.0000001, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8
 }
 
+# you can add parameter combination manually by providing
 # path_to_package, out_path, dt_string, data, nn_specs, epochs, batch_size, lr, seed
-manual_exp_configs = None  # [(path_to_package, out_path, dt_string, 'ER', ('GNN', 10, 10, 1, 1, 1), 1, 33, 0.002, 1900)]
+manual_exp_configs = None  # e.g. [(path_to_package, out_path, dt_string, 'ER', ('GNN', 10, 10, 1, 1, 1), 1, 33, 0.002, 1900)]
 
 
+# this method writes arrays to a log file
 def write_arrays_to_file(arrays, filename):
     combined_arrays = []
     for array in arrays:
@@ -56,6 +57,7 @@ def write_arrays_to_file(arrays, filename):
         for array in combined_arrays:
             file.write('\t'.join(array) + '\n')
 
+# this printer class prints and stores messages during training
 class ExperimentPrinter:
 
     def __init__(self, start_time, exp_id, out_path):
@@ -73,12 +75,6 @@ class ExperimentPrinter:
         file.close()
         self.arrays.append(array)
 
-
-
-# def AVaR(level: float, data: torch.tensor):
-#     data = torch.sort(data, dim=0, descending=True).values
-#     border_idx = int(len(data) * level)
-#     return torch.mean(data[:-border_idx])
 
 def risk_func(x):
     return torch.log(torch.exp(0.01*x).mean())/0.01
@@ -103,7 +99,7 @@ def evaluate(graph,
     return mean_loss
 
 
-def train(train_data,
+def train(train_data, # train data input not used by default since train data is sampled randomly
           val_data,
           test_data,
           model,
@@ -143,6 +139,8 @@ def train(train_data,
 
     return best_model, bailout_capital.item(), exp_pr, last_model
 
+
+# search method does some overhead tasks (load data, initialize model,...) and evaluates performance for each parameter combination
 def search(var: list):
     (path_to_package, out_path, dt_string, dataset, nn_specs, number_of_epochs,batch_size,
      learning_rate, seed, exp_id) = var
@@ -186,19 +184,17 @@ def search(var: list):
 
     exp_pr.print(['Step', 'Loading data'])
     list_of_graphs, dict_of_labels = dgl.load_graphs(data_path)
-    # list_of_graphs = list_of_graphs[:500]
 
     exp_pr.print(['Step', 'Preprocessing'])
 
     train_idx = int(len(list_of_graphs)*train_ratio)
     val_idx = int(len(list_of_graphs)*val_ratio)
-    # train_data = DataGeneration.get_graphs_from_list(list_of_graphs[:train_idx])
+    # train_data = DataGeneration.get_graphs_from_list(list_of_graphs[:train_idx]) # can load fixed train data here if not training on randomly sampled data
     val_data = get_graphs_from_list(list_of_graphs[train_idx:train_idx+val_idx])
     test_data = get_graphs_from_list(list_of_graphs[train_idx+val_idx:])
 
     # Create model and train
     exp_pr.print(['Step', 'Initialize Model'])
-
 
     if nn_specs[0] == 'Uniform':
         model = Models.UniformBailoutPredictor()
@@ -206,7 +202,6 @@ def search(var: list):
         model = Models.DefaultOnlyBailoutPredictor()
     else:
         model = Models.FirstLevelBailoutPredictor()
-
 
     train_start = time.time()
     exp_pr.print(['Step', 'Training'])
@@ -225,46 +220,38 @@ def search(var: list):
 
     exp_pr.print(['Step', 'Save Model'])
 
-    # model_name = ''
-    # for comp in nn_specs:
-    #     model_name = model_name + f'{comp}_'
-    # model_name = model_name + f'{dataset}_{learning_rate}_{batch_size}_{exp_id}'
-    # torch.save(model.state_dict(), out_path + model_name + '.pt')
-    # torch.save(last_model.state_dict(), out_path + model_name + '_last.pt')
-
     duration = time.time() - train_start
     exp_pr.print(['Info','Duration', '{:.4f}'.format(duration)])
     print()
     return exp_pr.arrays
 
 
-########################################################################################################################
-########################################################################################################################
-# Original main from experiment
-
-
 if __name__ == '__main__':
 
     if not os.path.exists(out_path):
         os.makedirs(out_path)
+
     # combinatorics
     keys = list(config)
-    # param_comb = itertools.product(*map(config.get, keys))
     param_comb = [comb for comb in itertools.product(*map(config.get, keys))]
 
     if manual_exp_configs is not None:
         param_comb += manual_exp_configs
 
-    # multiprocessing  ### currently not running on laptop environment... ###
-    param_comb_multi = [[*comb,id] for id, comb in enumerate(param_comb)]
-    pool = Pool(6)
-    exp_arrays = pool.map(search, param_comb_multi)
+    ####################################################################################################################
+    # multiprocessing
+    # param_comb_multi = [[*comb,id] for id, comb in enumerate(param_comb)]
+    # pool = Pool(16)
+    # exp_arrays = pool.map(search, param_comb_multi)
+    ####################################################################################################################
 
-    # debugging loop (can be used isntead of multiprocessing)
-    # exp_arrays = []
-    # for exp_id, comb in enumerate(param_comb):
-    #     exp_array = search([*comb, exp_id])
-    #     exp_arrays.append(exp_array)
+    ####################################################################################################################
+    # debugging loop (can be used instead of multiprocessing)
+    exp_arrays = []
+    for exp_id, comb in enumerate(param_comb):
+        exp_array = search([*comb, exp_id])
+        exp_arrays.append(exp_array)
+    ####################################################################################################################
 
     write_arrays_to_file(exp_arrays, out_path + 'exp_log.txt')
     print('Done')

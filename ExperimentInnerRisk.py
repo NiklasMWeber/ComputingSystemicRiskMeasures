@@ -214,7 +214,7 @@ def train(train_data, # train data input not used by default since train data is
 
     return best_model, bailout_capital.item(), exp_pr, last_model
 
-# search method does some overhead tasks (load data, initilaize model,...) and starts training for each parameter combination
+# search method does some overhead tasks (load data, initialize model,...) and starts training for each parameter combination
 def search(var: list):
     (path_to_package, out_path, dt_string, dataset, nn_specs, number_of_epochs,batch_size,
      learning_rate, seed, exp_id) = var
@@ -321,11 +321,6 @@ def search(var: list):
     return exp_pr.arrays
 
 
-########################################################################################################################
-########################################################################################################################
-# Original main from experiment
-
-
 if __name__ == '__main__':
 
     if not os.path.exists(out_path):
@@ -333,7 +328,6 @@ if __name__ == '__main__':
 
     # combinatorics
     keys = list(config)
-    # param_comb = itertools.product(*map(config.get, keys))
     param_comb = [comb for comb in itertools.product(*map(config.get, keys))]
 
     if manual_exp_configs is not None:
@@ -341,17 +335,17 @@ if __name__ == '__main__':
 
     ####################################################################################################################
     # multiprocessing
-    param_comb_multi = [[*comb,id] for id, comb in enumerate(param_comb)]
-    pool = Pool(16)
-    exp_arrays = pool.map(search, param_comb_multi)
+    # param_comb_multi = [[*comb,id] for id, comb in enumerate(param_comb)]
+    # pool = Pool(16)
+    # exp_arrays = pool.map(search, param_comb_multi)
     ####################################################################################################################
 
     ####################################################################################################################
     # debugging loop (can be used instead of multiprocessing)
-    # exp_arrays = []
-    # for exp_id, comb in enumerate(param_comb):
-    #     exp_array = search([*comb, exp_id])
-    #     exp_arrays.append(exp_array)
+    exp_arrays = []
+    for exp_id, comb in enumerate(param_comb):
+        exp_array = search([*comb, exp_id])
+        exp_arrays.append(exp_array)
     ####################################################################################################################
 
     write_arrays_to_file(exp_arrays, out_path + 'exp_log.txt')
