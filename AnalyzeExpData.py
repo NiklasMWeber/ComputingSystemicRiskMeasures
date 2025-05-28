@@ -5,7 +5,7 @@ import pandas as pd
 # the csv file contains mean and std across the seeds of the performance of all parameter combinations in the config file
 
 path_to_package = os.path.abspath(os.getcwd()).split('ComputingSystemicRiskMeasures')[0] + 'ComputingSystemicRiskMeasures/'
-dt_string = '2025_04_17_22_37_59_Outer_Bench'
+dt_string = '2025_01_01_15_30_00'
 out_path = path_to_package + 'Experiments/' + dt_string + '/'
 filename = out_path + 'exp_log.txt'
 
