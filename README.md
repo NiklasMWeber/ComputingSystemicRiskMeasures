@@ -2,6 +2,21 @@
 
 This repository contains code to replicate the numerical experiments of
 "Computing Systemic Risk Measures with Graph Neural Networks".
+https://arxiv.org/abs/2410.07222
+
+## Setting up the environment
+Create a python environment with Python 3.11
+e.g. conda create --name ComputingSysRiskMeasures python==3.11
+
+Furthermore install the following packages e.g. with pip: \
+pip install numpy==1.26.4 \
+pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118 \
+pip install dgl==1.1.1+cu118 -f https://data.dgl.ai/wheels/cu118/repo.html
+
+Additionally, you need scipy and pandas but here the version seems not to be cirtical.
+Working versions are for example scipy 1.15.3 and pandas 2.2.3.
+
+## The Files and Experiments
 
 The experiments on the stylized datasets in section 6.1 can be replicated by running
 "SimpleExperimentOverfit.py" and "SimpleExperimentGeneralize.py"
