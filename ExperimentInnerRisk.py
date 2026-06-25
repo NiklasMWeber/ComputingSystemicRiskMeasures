@@ -286,6 +286,8 @@ def search(var: list):
     elif nn_specs[0] == 'LinMod':
         (_, n_node_feat, bias) = nn_specs
         model = Models.LinMod(n_node_feat=n_node_feat, bias=bias)
+    elif nn_specs[0] == 'MP-XPENN':
+        model = Models.MP_XPENN()
     else:  # nn_specs[0] == 'constant':
         (_, n_dimension) = nn_specs
         model = Models.ConstantBailout(n_dimension=n_dimension)

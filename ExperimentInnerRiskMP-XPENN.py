@@ -37,7 +37,7 @@ config = {
     # specify NN models to train (see Models.py for details on constructor)
     'nn_specs': [
         ('MP-XPENN', 'hardcoded structure'),
-        ('GNN', 3, 7, 10, 1, 7, 3),
+        # ('GNN', 3, 7, 10, 1, 7, 3),
     ],
 
     'number_of_epochs': [100],
