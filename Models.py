@@ -1,9 +1,13 @@
-from typing import List
+from typing import List, Optional, Union, Tuple, Callable
 
 import numpy as np
-import torch
 import torch.nn as nn
 from dgl.nn.pytorch.conv import SAGEConv
+
+import torch
+from torch import Tensor
+import dgl
+import dgl.function as fn
 
 from EisenbergNoe import get_clearing_vector_iter_from_batch
 
@@ -292,6 +296,113 @@ class PENN(nn.Module):
         features_per_node = features.reshape(n_graphs_in_batch, n_nodes, -1)
         bailout_score = self.forward(features_per_node, liab_vec)
         bailout_score = bailout_score.squeeze(dim=-1)
+        bailout_score = torch.softmax(bailout_score, dim=1)
+        return bailout_score
+
+
+
+class xpenn_conv(nn.Module):
+
+    def __init__(
+            self,
+            mp_func: Callable
+    ):
+        super().__init__()
+
+        self.mp_func = mp_func
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        if hasattr(self.mp_func, 'reset_parameters'):
+            self.mp_func.reset_parameters()
+
+    def forward(
+            self,
+            graph: dgl.DGLGraph,
+            x: Union[Tensor, Tuple[Tensor, Tensor]],
+            edge_attr: Optional[Tensor] = None,
+    ) -> Tensor:
+        if isinstance(x, Tensor):
+            x_src, x_dst = x, x
+        else:
+            x_src, x_dst = x
+
+        with graph.local_scope():
+            graph.srcdata['x'] = x_src
+            graph.dstdata['x'] = x_dst
+            if edge_attr is not None:
+                graph.edata['edge_attr'] = edge_attr
+
+            reduce_func = fn.mean('m', 'out')
+            graph.update_all(self._message_func, reduce_func)
+
+            out = graph.dstdata['out']
+
+        return out
+
+    def _message_func(self, edges):
+        x_j = edges.src['x']
+        x_i = edges.dst['x']
+        if 'edge_attr' in edges.data:
+            z = torch.cat([x_j, edges.data['edge_attr'], x_i], dim=-1)
+        else:
+            z = torch.cat([x_j, x_i], dim=-1)
+        return {'m': self.mp_func(z)}
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(aggr=mean)'
+
+class MP_XPENN(nn.Module):
+
+    def __init__(self, nfeat_dim=3, efeat_dim=1):
+        super().__init__()
+
+        self.edge_func = nn.Linear(2 * nfeat_dim + efeat_dim, 10)
+
+        self.edge_func2 = nn.Sequential(
+            nn.Linear(2 * nfeat_dim + efeat_dim,10),
+            nn.LeakyReLU(),
+            nn.Linear(10, 10)
+        )
+
+        self.node_func = nn.Linear(nfeat_dim + 10, 10)
+
+        self.comb_func = nn.Sequential(
+            nn.Linear(nfeat_dim + 2 * 10,20),
+            nn.LeakyReLU(),
+            nn.Linear(20, 20),
+            nn.LeakyReLU(),
+            nn.Linear(20, 1),
+        )
+
+        self.conv = xpenn_conv(self.edge_func)
+        self.conv2 = xpenn_conv(self.edge_func2)
+
+    def forward(self, graph: dgl.DGLGraph, x: torch.Tensor,
+                edge_attr: torch.Tensor = None) -> torch.Tensor:
+        h_neigh = self.conv(graph, x, edge_attr)  # calc edge signals and add-pool neighborhoods
+        h_neigh2 = self.conv2(graph, x, edge_attr)
+
+        h_graph = torch.cat([x, h_neigh], dim=-1)  # concat orig node feat and neigh feat
+        h_graph = self.node_func(h_graph)  # calc node+neigh signals
+
+        with graph.local_scope():
+            graph.ndata['h_graph'] = h_graph
+            h_graph_pooled = dgl.mean_nodes(graph, 'h_graph')  # global add-pool per graph
+            h_graph = dgl.broadcast_nodes(graph, h_graph_pooled)  # expand back to per-node feat
+
+        h_new = torch.cat([x, h_neigh2, h_graph], dim=-1)  # concat orig, neigh, graph feat
+        h_new = self.comb_func(h_new)  # calc node-wise output
+        return h_new
+
+    def predict(self, graph, list_of_graphs, batch_of_liab, batch_of_assets, batch_of_outgoing):
+        features_list = [graph.ndata['assets'], graph.ndata['outgoingLiabilities'], graph.ndata['incomingLiabilities']]
+        features = torch.stack(features_list, dim=1)
+        efeat = torch.reshape(graph.edata['weight'], (-1, 1))
+        bailout_score = self.forward(graph, features, efeat)
+        n_graphs_in_batch = len(list_of_graphs)
+        bailout_score = bailout_score.split(list_of_graphs[0].num_nodes())
+        bailout_score = torch.stack(bailout_score, dim=0).reshape((n_graphs_in_batch, -1))
         bailout_score = torch.softmax(bailout_score, dim=1)
         return bailout_score
 
