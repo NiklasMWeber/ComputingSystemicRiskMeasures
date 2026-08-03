@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from dgl.nn.pytorch.conv import SAGEConv
 
+from Models import xpenn_conv
 
 # 2* N graphs with i=0,...,N-1 for cascade and star network
 
@@ -130,6 +131,54 @@ class XPENN(nn.Module):
         bailout_score = torch.softmax(bailout_score, dim=0)
         return bailout_score
 
+
+class MP_XPENN(nn.Module):
+
+    def __init__(self, nfeat_dim=3, efeat_dim=1):
+        super().__init__()
+
+        self.edge_func = nn.Linear(2 * nfeat_dim + efeat_dim, 10)
+
+        self.edge_func2 = nn.Sequential(
+            nn.Linear(2 * nfeat_dim + efeat_dim,10),
+            nn.LeakyReLU(),
+            nn.Linear(10, 10)
+        )
+
+        self.node_func = nn.Linear(nfeat_dim + 10, 10)
+
+        self.comb_func = nn.Sequential(
+            nn.Linear(nfeat_dim + 2 * 10,10),
+            nn.LeakyReLU(),
+            nn.Linear(10, 1),
+        )
+
+        self.conv = xpenn_conv(self.edge_func)
+        self.conv2 = xpenn_conv(self.edge_func2)
+
+    def forward(self, graph: dgl.DGLGraph, x: torch.Tensor,
+                edge_attr: torch.Tensor = None) -> torch.Tensor:
+        h_neigh = self.conv(graph, x, edge_attr)  # calc edge signals and add-pool neighborhoods
+        h_neigh2 = self.conv2(graph, x, edge_attr)
+
+        h_graph = torch.cat([x, h_neigh], dim=-1)  # concat orig node feat and neigh feat
+        h_graph = self.node_func(h_graph)  # calc node+neigh signals
+
+        with graph.local_scope():
+            graph.ndata['h_graph'] = h_graph
+            h_graph_pooled = dgl.mean_nodes(graph, 'h_graph')  # global add-pool per graph
+            h_graph = dgl.broadcast_nodes(graph, h_graph_pooled)  # expand back to per-node feat
+
+        h_new = torch.cat([x, h_neigh2, h_graph], dim=-1)  # concat orig, neigh, graph feat
+        h_new = self.comb_func(h_new)  # calc node-wise output
+        return h_new
+
+    def predict(self, graph):
+        features = graph.ndata['assets'].reshape(-1, 1)
+        efeat = torch.reshape(graph.edata['weight'], (-1, 1))
+        bailout_score = self.forward(graph, features, efeat).reshape(-1)
+        bailout_score = torch.softmax(bailout_score, dim=0)
+        return bailout_score
 
 class NNL(nn.Module):
     def __init__(self, N):
@@ -294,6 +343,8 @@ def run_experiment(N,
         model = XPENN()
     elif nn_specs == 'NNL':
         model = NNL(N)
+    elif nn_specs == 'MP-XPENN':
+        model = MP_XPENN(1,1)
     else:
         model = GNN()
 
@@ -321,13 +372,17 @@ if __name__ == '__main__':
 
     run_experiment(10, 'GNN', 9, 1000, seed, 0.001)
     run_experiment(10, 'XPENN', 9, 1000, seed, 0.001)
+    run_experiment(10, 'MP-XPENN', 9, 1000, seed, 0.001)
     run_experiment(10, 'NNL', 9, 1000, seed, 0.001)
     run_experiment(20, 'GNN', 19, 1000, seed, 0.001)
     run_experiment(20, 'XPENN', 19, 1000, seed, 0.001)
+    run_experiment(20, 'MP-XPENN', 19, 1000, seed, 0.001)
     run_experiment(20, 'NNL', 19, 1000, seed, 0.0005)
     run_experiment(50, 'GNN', 49, 1000, seed, 0.001)
     run_experiment(50, 'XPENN', 49, 1000, seed, 0.001)
+    run_experiment(50, 'MP-XPENN', 49, 1000, seed, 0.001)
     run_experiment(50, 'NNL', 49, 1000, seed, 0.0001)
     run_experiment(100, 'GNN', 99, 1000, seed, 0.001)
     run_experiment(100, 'XPENN', 99, 1000, seed, 0.001)
+    run_experiment(100, 'MP-XPENN', 99, 1000, seed, 0.001)
     run_experiment(100, 'NNL', 99, 1000, seed, 0.00001)
