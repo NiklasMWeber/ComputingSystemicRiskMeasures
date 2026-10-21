@@ -41,6 +41,7 @@ config = {
     'batch_size': [10],  # [1, 10, 100],
     'learning_rate': [1e-3],
     'seed': [1900, 1954, 1974, 1990, 2014],  # although benchmarks are deterministic, probabilistic bisection search is random --> use seeds
+    'risk_func': 'mean' ## or entropic
 }
 
 # you can add parameter combination manually by providing
@@ -97,29 +98,6 @@ def next_root_idx(func_val, current_idx, current_dist, values):
     return next_idx, next_root, current_dist
 
 
-def risk_func(x):
-    return torch.log(torch.exp(0.01*x).mean())/0.01
-    # return torch.mean(x)  # expectation risk measure
-
-
-def evaluate(graph,
-             list_of_graphs,
-             batch_of_liab,
-             batch_of_assets,
-             batch_of_outgoing,
-             model: nn.Module,
-             bailout_capital,
-             ) -> float:
-    bailout_ratio = model.predict(graph, list_of_graphs, batch_of_liab, batch_of_assets, batch_of_outgoing)
-    batch_of_cv = get_clearing_vector_iter_from_batch(batch_of_liab,
-                                                      batch_of_assets + bailout_ratio.unsqueeze(-1) * bailout_capital,
-                                                      batch_of_outgoing, n_iter=50)
-    batch_of_node_loss = batch_of_outgoing - batch_of_cv
-    batch_of_graph_loss = batch_of_node_loss.sum(1)  # first dim batch, second dim node
-    mean_loss = risk_func(batch_of_graph_loss)
-    return mean_loss
-
-
 def train(train_data, # train data input not used by default since train data is sampled randomly
           val_data,
           test_data,
@@ -130,7 +108,37 @@ def train(train_data, # train data input not used by default since train data is
           number_of_epochs: int,
           batch_size: int,
           learning_rate: float = 0.01,
+          risk_func: str = 'mean',
           exp_pr: ExperimentPrinter = None):
+
+
+    if risk_func == 'mean':
+        def risk_func(x):
+            return torch.mean(x)  # expectation risk measure
+    else:
+        def risk_func(x):
+            return torch.log(torch.exp(0.01 * x).mean()) / 0.01  # entropic risk measure
+
+
+    def evaluate(graph,
+                 list_of_graphs,
+                 batch_of_liab,
+                 batch_of_assets,
+                 batch_of_outgoing,
+                 model: nn.Module,
+                 bailout_capital,
+                 ) -> float:
+        model.eval()
+        with torch.no_grad():
+            bailout_ratio = model.predict(graph, list_of_graphs, batch_of_liab, batch_of_assets, batch_of_outgoing)
+            batch_of_cv = get_clearing_vector_iter_from_batch(batch_of_liab,
+                                                              batch_of_assets + bailout_ratio.unsqueeze(
+                                                                  -1) * bailout_capital,
+                                                              batch_of_outgoing, n_iter=50)
+            batch_of_node_loss = batch_of_outgoing - batch_of_cv
+            batch_of_graph_loss = batch_of_node_loss.sum(1)  # first dim batch, second dim node
+            mean_loss = risk_func(batch_of_graph_loss)
+        return mean_loss
 
     # initialize probabilistic bisection search for optimal bailout capital
     start = 0
@@ -234,7 +242,7 @@ def train(train_data, # train data input not used by default since train data is
 # search method does some overhead tasks (load data, initialize model,...) and starts training for each parameter combination
 def search(var: list):
     (path_to_package, out_path, dt_string, dataset, nn_specs, number_of_epochs,batch_size,
-     learning_rate, seed, exp_id) = var
+     learning_rate, seed, risk_func, exp_id) = var
 
     start_time = int(time.time())
     exp_pr = ExperimentPrinter(start_time=start_time, exp_id=exp_id, out_path=out_path)
@@ -273,7 +281,7 @@ def search(var: list):
     exp_pr.print(['Info', 'Batch Size', str(batch_size)])
     exp_pr.print(['Info', 'Learning Rate', str(learning_rate)])
     exp_pr.print(['Info', 'Seed', str(seed)])
-
+    exp_pr.print(['Info', 'Risk Func', risk_func])
 
     exp_pr.print(['Step', 'Loading data'])
     list_of_graphs, dict_of_labels = dgl.load_graphs(data_path)
@@ -309,6 +317,7 @@ def search(var: list):
                                                                        number_of_epochs=number_of_epochs,
                                                                        batch_size=batch_size,
                                                                        learning_rate=learning_rate,
+                                                                       risk_func=risk_func,
                                                                        exp_pr=exp_pr)
 
 

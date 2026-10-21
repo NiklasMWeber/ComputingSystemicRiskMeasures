@@ -97,15 +97,15 @@ class XPENN(nn.Module):
         h_psi = self.psi1(stacked_features_for_psi)
         h_psi = torch.sigmoid(h_psi)
         h_psi = self.psi2(h_psi)
-        h_psi = h_psi.mean(dim=-2)
+        h_psi = h_psi.sum(dim=-2)
 
         h = self.phi1(stacked_features)
-        h = h.mean(dim=-2)  # sum messages (dim=-1) over all dst j (-2) for a fixed src i (-3)
+        h = h.sum(dim=-2)  # sum messages (dim=-1) over all dst j (-2) for a fixed src i (-3)
 
         h = torch.cat([original_node_feat, h], dim=-1)
         h = self.alpha1(h)
 
-        h = h.mean(dim=-2)  # sum messages (dim=-1) of all nodes (dim=-2)
+        h = h.sum(dim=-2)  # sum messages (dim=-1) of all nodes (dim=-2)
 
         h = h.unsqueeze(dim=-2)
         repeat_dim = [1 for _ in h.size()]  # torch.ones(len(original_node_feat_size))
@@ -134,9 +134,10 @@ class XPENN(nn.Module):
 
 class MP_XPENN(nn.Module):
 
-    def __init__(self, nfeat_dim=3, efeat_dim=1):
+    def __init__(self, nfeat_dim=3, efeat_dim=1, reduce='sum'):
         super().__init__()
 
+        self.reduce = reduce
         self.edge_func = nn.Linear(2 * nfeat_dim + efeat_dim, 10)
 
         self.edge_func2 = nn.Sequential(
@@ -153,8 +154,8 @@ class MP_XPENN(nn.Module):
             nn.Linear(10, 1),
         )
 
-        self.conv = xpenn_conv(self.edge_func)
-        self.conv2 = xpenn_conv(self.edge_func2)
+        self.conv = xpenn_conv(self.edge_func, reduce)
+        self.conv2 = xpenn_conv(self.edge_func2, reduce)
 
     def forward(self, graph: dgl.DGLGraph, x: torch.Tensor,
                 edge_attr: torch.Tensor = None) -> torch.Tensor:
@@ -166,7 +167,10 @@ class MP_XPENN(nn.Module):
 
         with graph.local_scope():
             graph.ndata['h_graph'] = h_graph
-            h_graph_pooled = dgl.mean_nodes(graph, 'h_graph')  # global add-pool per graph
+            if self.reduce == 'mean':
+                h_graph_pooled = dgl.mean_nodes(graph, 'h_graph')  # global mean-pool per graph
+            else:
+                h_graph_pooled = dgl.sum_nodes(graph, 'h_graph')  # global add-pool per graph
             h_graph = dgl.broadcast_nodes(graph, h_graph_pooled)  # expand back to per-node feat
 
         h_new = torch.cat([x, h_neigh2, h_graph], dim=-1)  # concat orig, neigh, graph feat
@@ -344,7 +348,9 @@ def run_experiment(N,
     elif nn_specs == 'NNL':
         model = NNL(N)
     elif nn_specs == 'MP-XPENN':
-        model = MP_XPENN(1,1)
+        model = MP_XPENN(1,1, 'sum')
+    elif nn_specs == 'MP-XPENN-mean':
+        model = MP_XPENN(1, 1, 'mean')
     else:
         model = GNN()
 
@@ -373,16 +379,20 @@ if __name__ == '__main__':
     run_experiment(10, 'GNN', 9, 1000, seed, 0.001)
     run_experiment(10, 'XPENN', 9, 1000, seed, 0.001)
     run_experiment(10, 'MP-XPENN', 9, 1000, seed, 0.001)
+    # run_experiment(10, 'MP-XPENN-mean', 9, 1000, seed, 0.001)
     run_experiment(10, 'NNL', 9, 1000, seed, 0.001)
     run_experiment(20, 'GNN', 19, 1000, seed, 0.001)
     run_experiment(20, 'XPENN', 19, 1000, seed, 0.001)
     run_experiment(20, 'MP-XPENN', 19, 1000, seed, 0.001)
+    # run_experiment(20, 'MP-XPENN-mean', 19, 1000, seed, 0.001)
     run_experiment(20, 'NNL', 19, 1000, seed, 0.0005)
     run_experiment(50, 'GNN', 49, 1000, seed, 0.001)
     run_experiment(50, 'XPENN', 49, 1000, seed, 0.001)
     run_experiment(50, 'MP-XPENN', 49, 1000, seed, 0.001)
+    # run_experiment(50, 'MP-XPENN-mean', 49, 1000, seed, 0.001)
     run_experiment(50, 'NNL', 49, 1000, seed, 0.0001)
     run_experiment(100, 'GNN', 99, 1000, seed, 0.001)
     run_experiment(100, 'XPENN', 99, 1000, seed, 0.001)
     run_experiment(100, 'MP-XPENN', 99, 1000, seed, 0.001)
+    # run_experiment(100, 'MP-XPENN-mean', 99, 1000, seed, 0.001)
     run_experiment(100, 'NNL', 99, 1000, seed, 0.00001)

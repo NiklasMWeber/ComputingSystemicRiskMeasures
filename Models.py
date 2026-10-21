@@ -236,7 +236,7 @@ class PENN(nn.Module):
             else:
                 h_psi = self.layers[layer_count](h_psi)
                 layer_count += 1
-            h_psi = torch.mean(h_psi, dim=-2)
+            h_psi = torch.sum(h_psi, dim=-2)
 
 
         if len(self.layer_sizes_phi) > 1:  # last layer will be followed by activation --> need to distinguish
@@ -252,7 +252,7 @@ class PENN(nn.Module):
             h = self.layers[layer_count](h)
             layer_count += 1
 
-        h = torch.mean(h, dim=-2)
+        h = torch.sum(h, dim=-2)
         h = torch.cat([node_feat, h], dim=-1)  # manipulate h according to PENN model from phi to alpha
 
         if len(self.layer_sizes_alpha) > 1:
@@ -263,7 +263,7 @@ class PENN(nn.Module):
         h = self.layers[layer_count](h)
         layer_count += 1
 
-        h = h.mean(dim=-2, keepdim=True)  # manipulate h according to PENN from alpha to rho
+        h = h.sum(dim=-2, keepdim=True)  # manipulate h according to PENN from alpha to rho
         repeat_dim = [1 for _ in h.size()]  # torch.ones(len(original_node_feat_size))
         repeat_dim[-2] = number_of_nodes
         h = h.repeat(repeat_dim)
@@ -305,10 +305,11 @@ class xpenn_conv(nn.Module):
 
     def __init__(
             self,
-            mp_func: Callable
+            mp_func: Callable,
+            reduce='sum'
     ):
         super().__init__()
-
+        self.reduce = reduce
         self.mp_func = mp_func
         self.reset_parameters()
 
@@ -333,7 +334,11 @@ class xpenn_conv(nn.Module):
             if edge_attr is not None:
                 graph.edata['edge_attr'] = edge_attr
 
-            reduce_func = fn.mean('m', 'out')
+            if self.reduce == 'mean':
+                reduce_func = fn.mean('m', 'out')
+            else:
+                reduce_func = fn.sum('m', 'out')
+
             graph.update_all(self._message_func, reduce_func)
 
             out = graph.dstdata['out']
@@ -354,9 +359,10 @@ class xpenn_conv(nn.Module):
 
 class MP_XPENN(nn.Module):
 
-    def __init__(self, nfeat_dim=3, efeat_dim=1):
+    def __init__(self, nfeat_dim=3, efeat_dim=1, reduce='sum'):
         super().__init__()
 
+        self.reduce = reduce
         self.edge_func = nn.Linear(2 * nfeat_dim + efeat_dim, 10)
 
         self.edge_func2 = nn.Sequential(
@@ -375,8 +381,8 @@ class MP_XPENN(nn.Module):
             nn.Linear(20, 1),
         )
 
-        self.conv = xpenn_conv(self.edge_func)
-        self.conv2 = xpenn_conv(self.edge_func2)
+        self.conv = xpenn_conv(self.edge_func, reduce)
+        self.conv2 = xpenn_conv(self.edge_func2, reduce)
 
     def forward(self, graph: dgl.DGLGraph, x: torch.Tensor,
                 edge_attr: torch.Tensor = None) -> torch.Tensor:
@@ -388,7 +394,10 @@ class MP_XPENN(nn.Module):
 
         with graph.local_scope():
             graph.ndata['h_graph'] = h_graph
-            h_graph_pooled = dgl.mean_nodes(graph, 'h_graph')  # global add-pool per graph
+            if self.reduce == 'mean':
+                h_graph_pooled = dgl.mean_nodes(graph, 'h_graph')  # global mean-pool per graph
+            else:
+                h_graph_pooled = dgl.sum_nodes(graph, 'h_graph')  # global add-pool per graph
             h_graph = dgl.broadcast_nodes(graph, h_graph_pooled)  # expand back to per-node feat
 
         h_new = torch.cat([x, h_neigh2, h_graph], dim=-1)  # concat orig, neigh, graph feat

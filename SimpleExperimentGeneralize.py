@@ -98,15 +98,15 @@ class XPENN(nn.Module):
         h_psi = self.psi1(stacked_features_for_psi)
         h_psi = torch.sigmoid(h_psi)
         h_psi = self.psi2(h_psi)
-        h_psi = h_psi.mean(dim=-2)
+        h_psi = h_psi.sum(dim=-2)
 
         h = self.phi1(stacked_features)
-        h = h.mean(dim=-2)  # sum messages (dim=-1) over all dst j (-2) for a fixed src i (-3)
+        h = h.sum(dim=-2)  # sum messages (dim=-1) over all dst j (-2) for a fixed src i (-3)
 
         h = torch.cat([original_node_feat, h], dim=-1)
         h = self.alpha1(h)
 
-        h = h.mean(dim=-2)  # sum messages (dim=-1) of all nodes (dim=-2)
+        h = h.sum(dim=-2)  # sum messages (dim=-1) of all nodes (dim=-2)
 
         h = h.unsqueeze(dim=-2)
         repeat_dim = [1 for _ in h.size()]  # torch.ones(len(original_node_feat_size))
@@ -135,9 +135,10 @@ class XPENN(nn.Module):
 
 class MP_XPENN(nn.Module):
 
-    def __init__(self, nfeat_dim=3, efeat_dim=1):
+    def __init__(self, nfeat_dim=3, efeat_dim=1, reduce='sum'):
         super().__init__()
 
+        self.reduce = reduce
         self.edge_func = nn.Linear(2 * nfeat_dim + efeat_dim, 10)
 
         self.edge_func2 = nn.Sequential(
@@ -154,8 +155,8 @@ class MP_XPENN(nn.Module):
             nn.Linear(10, 1),
         )
 
-        self.conv = xpenn_conv(self.edge_func)
-        self.conv2 = xpenn_conv(self.edge_func2)
+        self.conv = xpenn_conv(self.edge_func, reduce)
+        self.conv2 = xpenn_conv(self.edge_func2, reduce)
 
     def forward(self, graph: dgl.DGLGraph, x: torch.Tensor,
                 edge_attr: torch.Tensor = None) -> torch.Tensor:
@@ -167,7 +168,10 @@ class MP_XPENN(nn.Module):
 
         with graph.local_scope():
             graph.ndata['h_graph'] = h_graph
-            h_graph_pooled = dgl.mean_nodes(graph, 'h_graph')  # global add-pool per graph
+            if self.reduce == 'mean':
+                h_graph_pooled = dgl.mean_nodes(graph, 'h_graph')  # global mean-pool per graph
+            else:
+                h_graph_pooled = dgl.sum_nodes(graph, 'h_graph')  # global add-pool per graph
             h_graph = dgl.broadcast_nodes(graph, h_graph_pooled)  # expand back to per-node feat
 
         h_new = torch.cat([x, h_neigh2, h_graph], dim=-1)  # concat orig, neigh, graph feat
