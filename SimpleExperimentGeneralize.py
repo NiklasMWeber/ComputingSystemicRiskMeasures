@@ -98,15 +98,15 @@ class XPENN(nn.Module):
         h_psi = self.psi1(stacked_features_for_psi)
         h_psi = torch.sigmoid(h_psi)
         h_psi = self.psi2(h_psi)
-        h_psi = h_psi.sum(dim=-2)
+        h_psi = h_psi.mean(dim=-2)
 
         h = self.phi1(stacked_features)
-        h = h.sum(dim=-2)  # sum messages (dim=-1) over all dst j (-2) for a fixed src i (-3)
+        h = h.mean(dim=-2)  # sum messages (dim=-1) over all dst j (-2) for a fixed src i (-3)
 
         h = torch.cat([original_node_feat, h], dim=-1)
         h = self.alpha1(h)
 
-        h = h.sum(dim=-2)  # sum messages (dim=-1) of all nodes (dim=-2)
+        h = h.mean(dim=-2)  # sum messages (dim=-1) of all nodes (dim=-2)
 
         h = h.unsqueeze(dim=-2)
         repeat_dim = [1 for _ in h.size()]  # torch.ones(len(original_node_feat_size))
@@ -135,7 +135,7 @@ class XPENN(nn.Module):
 
 class MP_XPENN(nn.Module):
 
-    def __init__(self, nfeat_dim=3, efeat_dim=1, reduce='sum'):
+    def __init__(self, nfeat_dim=3, efeat_dim=1, reduce='mean'):
         super().__init__()
 
         self.reduce = reduce

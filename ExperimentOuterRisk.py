@@ -47,12 +47,11 @@ config = {
         ('LinMod', 3, True)
     ],
 
-
     'number_of_epochs': [100],
     'batch_size': [10],  # [1, 10, 100],
     'learning_rate': [1e-3],
     'seed': [1900, 1954, 1974, 1990, 2014],
-    'risk_func': 'mean' ## or entropic
+    'risk_func': ['entropic'] ## or entropic
 }
 
 # you can add parameter combination manually by providing

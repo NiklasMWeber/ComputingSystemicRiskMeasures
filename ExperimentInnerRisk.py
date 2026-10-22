@@ -35,7 +35,8 @@ config = {
     'dataset': ['ER', 'CP', 'CPf'],
 
     # specify NN models to train (see Models.py for details on constructor)
-    'nn_specs': [('PENN', 3, 1, [[10, 10], [10], [10], [20, 20, 1]], False, False),
+    'nn_specs': [
+        ('PENN', 3, 1, [[10, 10], [10], [10], [20, 20, 1]], False, False),
         ('PENN', 3, 1, [[10, 10], [10], [10], [20, 20, 1]], True, False),
         ('PENN', 3, 1, [[10, 10], [10], [10], [20, 20, 1]], False, True),
         ('PENN', 3, 1, [[10, 10], [10], [10], [20, 20, 1]], True, True),
@@ -51,7 +52,7 @@ config = {
     'batch_size': [10],  # [1, 10, 100],
     'learning_rate': [1e-3],  # [1e-3, 1e-4, 1e-5]
     'seed': [1900, 1954, 1974, 1990, 2014],
-    'risk_func': 'mean'  # or entropic
+    'risk_func': ['mean']  # or entropic
 }
 
 # you can add parameter combination manually by providing

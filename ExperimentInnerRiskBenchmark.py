@@ -41,7 +41,7 @@ config = {
     'batch_size': [10],  # [1, 10, 100],
     'learning_rate': [1e-3],
     'seed': [1900],  # no seeds needed because benchmarks are deterministic,
-    'risk_func': 'mean'  # or entropic
+    'risk_func': ['mean']  # or entropic
 }
 
 # you can add parameter combination manually by providing

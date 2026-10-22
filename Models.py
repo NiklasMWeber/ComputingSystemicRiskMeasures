@@ -36,7 +36,7 @@ class GNN(nn.Module):
         self.Readout = nn.Linear(n_out_feats+n_in_feats, 1, bias=True)
 
     def reset_params(self):
-        self.__init__(self.n_in_feats,self.n_zeros, self.n_h_feats, self.n_e_featsself, self.n_out_feats,
+        self.__init__(self.n_in_feats,self.n_zeros, self.n_h_feats, self.n_e_feats, self.n_out_feats,
                       self.n_GNN_lay)
 
     def forward(self, g, features, e_feat):
@@ -306,7 +306,7 @@ class xpenn_conv(nn.Module):
     def __init__(
             self,
             mp_func: Callable,
-            reduce='sum'
+            reduce='mean'
     ):
         super().__init__()
         self.reduce = reduce
@@ -359,7 +359,7 @@ class xpenn_conv(nn.Module):
 
 class MP_XPENN(nn.Module):
 
-    def __init__(self, nfeat_dim=3, efeat_dim=1, reduce='sum'):
+    def __init__(self, nfeat_dim=3, efeat_dim=1, reduce='mean'):
         super().__init__()
 
         self.reduce = reduce
