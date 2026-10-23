@@ -65,7 +65,7 @@ def get_er_graphs(num_graphs: int = 100):
         list_of_outgoing_liab.append(outgoing_liabilities.unsqueeze(-1))
         list_of_assets.append(assets.unsqueeze(-1))
 
-        useful_tensor = (torch.stack(list_of_liab, dim=0),
+    useful_tensor = (torch.stack(list_of_liab, dim=0),
                           torch.stack( list_of_assets, dim=0),
                           torch.stack(list_of_outgoing_liab, dim=0))
 
@@ -124,7 +124,7 @@ def get_cp_graphs(num_graphs):
         list_of_assets.append(assets.unsqueeze(-1))
         list_of_outgoing_liab.append(outgoing_liabilities.unsqueeze(-1))
 
-        useful_tensor = (torch.stack(list_of_liab, dim=0), torch.stack(list_of_assets, dim=0),
+    useful_tensor = (torch.stack(list_of_liab, dim=0), torch.stack(list_of_assets, dim=0),
                          torch.stack(list_of_outgoing_liab, dim=0))
 
     return list_of_graphs, useful_tensor
@@ -161,7 +161,7 @@ def get_cpf_graphs(num_graphs, liab):
         list_of_assets.append(assets.unsqueeze(-1))
         list_of_outgoing_liab.append(outgoing_liabilities.unsqueeze(-1))
 
-        useful_tensor = (torch.stack(list_of_liab, dim=0),
+    useful_tensor = (torch.stack(list_of_liab, dim=0),
                          torch.stack(list_of_assets, dim=0),
                          torch.stack(list_of_outgoing_liab, dim=0))
 

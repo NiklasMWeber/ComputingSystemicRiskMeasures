@@ -39,9 +39,8 @@ These scripts will also create log files for each run in the "Experiments" direc
 
 The "ExperimentInner/Outer(Benchmark).py" files are structured as follows:
 - in the config file you can indicate the parameters of the experiment (e.g., datasets, NN models,
-epochs, learning rates, seeds, batch size). Be careful: all possible combinations of parameters will run.
+epochs, learning rates, seeds, risk measure, batch size). Be careful: all possible combinations of parameters will run.
 - If you want to add single experiments without running all combinations you can add them to the "manual_exp_configs".
-- You can specify the risk measure by manipulating the "risc_func" method.
 - There is the option to parallelize the runs of the parameter combinations.
 In order to do so just uncomment the "multiprocessing" paragraph and run it instead of the
 "debugging loop" paragraph (which you should comment out then)
@@ -49,6 +48,17 @@ In order to do so just uncomment the "multiprocessing" paragraph and run it inst
 Finally, "AnalyzeExpData.py" can be used to analyze the data a run of  "ExperimentInner/Outer(Benchmark).py"
 by calculating mean and standard deviation across the seeds for all parameter combinations and exporting the
 results to csv.
+
+## Models
+The PENN and XPENN models from "Computing Systemic Risk Measures with Graph Neural Networks,"
+https://arxiv.org/abs/2410.07222 correspond to the PENN class in the repository.
+In particular, a PENN is instantiated when the constructor is called with "ex=False", and an XPENN can be instantiated
+for "ex=True". 
+The architecture that corresponds to the PENN architecture with neighborhood aggregation discussed in, for example, 
+"Universality and approximation rates of graph neural networks with random features," https://arXiv.org/abs/2607.26699, 
+corresponds to the model MP-XPENN.
+
+## Feedback and Contact Information
 
 If you have any suggestions or questions, or would like to obtain the validation+test sets used in the paper,
 instead of generating them randomly with the DataGeneration file,
