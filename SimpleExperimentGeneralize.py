@@ -338,7 +338,7 @@ def train(model,
         if epoch % 10 == 0:
             performance_train = evaluate(model, bailout_capital, list_of_graphs_train)
             performance_test = evaluate(model, bailout_capital, list_of_graphs_test)
-            if performance_test < best_model_performance[1]:
+            if performance_train < best_model_performance[0]:
                 best_model_performance[0] = performance_train
                 best_model_performance[1] = performance_test
             my_print(

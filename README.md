@@ -54,9 +54,10 @@ The PENN and XPENN models from "Computing Systemic Risk Measures with Graph Neur
 https://arxiv.org/abs/2410.07222 correspond to the PENN class in the repository.
 In particular, a PENN is instantiated when the constructor is called with "ex=False", and an XPENN can be instantiated
 for "ex=True". 
-The architecture that corresponds to the PENN architecture with neighborhood aggregation discussed in, for example, 
-"Universality and approximation rates of graph neural networks with random features," https://arXiv.org/abs/2607.26699, 
-corresponds to the model MP-XPENN.
+
+For the revised version that is to appear in the SIGEST Section of SIAM Review 
+the PENN model with neighborhood aggregation corresponds to the class MP-XPENN,
+and the XPENN of the SIGEST Paper corresponds to the PENN class when the constructor is called with "ex=True".
 
 ## Feedback and Contact Information
 

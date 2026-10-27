@@ -236,7 +236,7 @@ class PENN(nn.Module):
             else:
                 h_psi = self.layers[layer_count](h_psi)
                 layer_count += 1
-            h_psi = torch.sum(h_psi, dim=-2)
+            h_psi = torch.mean(h_psi, dim=-2)
 
 
         if len(self.layer_sizes_phi) > 1:  # last layer will be followed by activation --> need to distinguish
@@ -252,7 +252,7 @@ class PENN(nn.Module):
             h = self.layers[layer_count](h)
             layer_count += 1
 
-        h = torch.sum(h, dim=-2)
+        h = torch.mean(h, dim=-2)
         h = torch.cat([node_feat, h], dim=-1)  # manipulate h according to PENN model from phi to alpha
 
         if len(self.layer_sizes_alpha) > 1:
@@ -263,7 +263,7 @@ class PENN(nn.Module):
         h = self.layers[layer_count](h)
         layer_count += 1
 
-        h = h.sum(dim=-2, keepdim=True)  # manipulate h according to PENN from alpha to rho
+        h = h.mean(dim=-2, keepdim=True)  # manipulate h according to PENN from alpha to rho
         repeat_dim = [1 for _ in h.size()]  # torch.ones(len(original_node_feat_size))
         repeat_dim[-2] = number_of_nodes
         h = h.repeat(repeat_dim)
